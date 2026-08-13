@@ -1,7 +1,7 @@
 ---
 name: ig-julia-project
 description: "Use when building an InformationGeometry.jl project."
-version: 0.1.0
+version: 0.2.0
 author: Hermes Agent
 created_by: agent
 license: MIT
@@ -14,7 +14,28 @@ metadata:
 
 # InformationGeometry.jl Project Construction
 
-Use this skill as phase A of `mechanistic-model-development`. Create a minimal, portable Julia project for either a static nonlinear/algebraic model or a deterministic ODE/state-space model. Prefer ordinary InformationGeometry.jl containers and small source files; do not create a bespoke framework.
+Use this skill as phase A of `mechanistic-model-development`. Create a minimal, portable Julia project for either a static nonlinear/algebraic model or a deterministic ODE/state-space model.
+
+## Julia environment setup — do this FIRST
+
+Always use a **local project environment** (not the global one). From the project directory:
+
+```julia
+using Pkg
+Pkg.activate(".")          # creates/uses Project.toml in the current directory
+Pkg.add(["InformationGeometry"])  # IG.jl is self-contained; pulls its own deps
+Pkg.instantiate()          # resolve and precompile
+```
+
+InformationGeometry.jl does not require CSV.jl — it has no CSV dependency. For reading CSV data, either:
+- `Pkg.add("CSV")` and use `CSV.File(path)`, or
+- Use Julia's built-in `DelimitedFiles.readdlm` or a simple `readlines` parser (no extra deps).
+
+If `Project.toml` already exists, just run `Pkg.activate("."); Pkg.instantiate()` — do not re-add packages.
+
+Run scripts with: `julia --project=. --startup-file=no run.jl`
+
+⚠️ **Timeout**: `Pkg.add` and `Pkg.instantiate` trigger precompilation of IG.jl and all its dependencies. In a fresh environment this takes **2–5 minutes**. Always set `timeout=300` (or use `background=true`) for these commands. Do NOT use the default 120s timeout — it will kill the precompilation midway and corrupt the environment.
 
 ## Inputs and mandatory pre-flight
 
@@ -32,13 +53,11 @@ Inspect the actual CSV before implementation. Write `INPUT_INTERPRETATION.md` th
 - parameter names, meanings, units, initial guesses, bounds/transforms if known;
 - error model.
 
-If measurement uncertainty is missing, use the agreed additive absolute-error / OLS default. A likelihood/profile calculation still needs an absolute residual scale: use a supplied scale when available; otherwise estimate the OLS residual scale after a provisional fit (normally `sqrt(SSE / max(n - p, 1))`) and record it as a fixed plug-in scale for that analysis. Do not present it as measured uncertainty, do not switch to proportional noise automatically, and state the limitation. For InformationGeometry.jl’s `DataSet`, use this declared fixed standard-deviation convention explicitly.
+If measurement uncertainty is missing, use the additive absolute-error / OLS default. A likelihood/profile calculation still needs an absolute residual scale: use a supplied scale when available; otherwise estimate the OLS residual scale after a provisional fit (`sqrt(SSE / max(n - p, 1))`) and record it as a fixed plug-in scale. For `DataSet`, pass this as the `σ` vector.
 
 If a material ambiguity remains, create `INPUT_CLARIFICATIONS.md`, commit it, write `STATUS.md` as `BLOCKED_INPUT`, and stop before calibration.
 
 ## Required project layout
-
-Create this small baseline layout, adapting filenames only when necessary:
 
 ```text
 <project>/
@@ -50,67 +69,122 @@ Create this small baseline layout, adapting filenames only when necessary:
   INPUT_INTERPRETATION.md
   MODELING_LOG.md
   data/input.csv
-  src/load_data.jl
-  src/model.jl
-  src/analysis.jl
   results/
   figures/
 ```
 
-`run.jl` must include the source files and run the current baseline from a clean working directory. Keep intermediate scratch files outside the handoff tree or under an ignored `scratch/` directory.
+`run.jl` must run the current baseline from a clean working directory. Keep scratch files outside the handoff tree.
 
-Initialize Git before any accepted model is implemented. Commit the immutable input and input interpretation separately from the baseline model whenever useful.
+Initialize Git before any accepted model is implemented.
 
-## InformationGeometry.jl construction patterns
+## Ready-to-run template: static (algebraic) model
 
-### Static model
-
-Use `DataSet(x, y, sigma; xnames=..., ynames=...)` then `DataModel(dataset, predictor, initial_parameters; ...)`. `DataModel` normally attempts an MLE at construction; use `SkipOptim=true` only when deliberately controlling optimization later.
+Copy this template and adapt the `model` function, parameter count, and data loading. It covers the full pipeline: load data → fit → model comparison → identifiability → profile likelihood CIs.
 
 ```julia
-using InformationGeometry
-x = collect(...)
-y = collect(...)
-σ = fill(σ_abs, length(y))
-data = DataSet(x, y, σ; xnames=["input"], ynames=["response"])
-predictor(x, θ) = θ[1] * x + θ[2]
-dm = DataModel(data, predictor, θ0; SkipOptim=true)
+using InformationGeometry, LinearAlgebra, Statistics, Printf
+
+# --- Load CSV data (no CSV.jl dependency) ---
+function read_csv(path)
+    lines = readlines(path)
+    header = [strip(h) for h in split(lines[1], ',')]
+    cols = [Float64[] for _ in header]
+    for line in lines[2:end]
+        isempty(strip(line)) && continue
+        vals = split(line, ',')
+        for (i, v) in enumerate(vals)
+            push!(cols[i], parse(Float64, strip(v)))
+        end
+    end
+    Dict(zip(header, cols))
+end
+
+function main()
+    raw = read_csv(joinpath(@__DIR__, "data", "input.csv"))
+    x, y, σ = raw["x"], raw["y"], get(raw, "sigma", ones(length(y)))
+    ds = DataSet(x, y, σ; xnames=["x"], ynames=["y"])
+
+    # --- Model definition ---
+    # For ydim=1: return a SCALAR (Number), not a vector
+    # θ is always a Vector{Float64}, even for 1 parameter
+    model(xi, θ) = θ[1]*xi + θ[2]          # ← replace with your model
+    np = 2                                  # ← number of parameters
+    θ0 = zeros(np)                          # ← initial guess
+
+    # --- Fit (DataModel auto-optimizes MLE on construction) ---
+    dm = DataModel(ds, model, θ0)
+    mle = MLE(dm)
+    println("MLE: ", mle)
+    println("logL: ", LogLikeMLE(dm))
+    println("AIC: ", AIC(dm), "  BIC: ", BIC(dm), "  AICc: ", AICc(dm))
+    println("MLEuncert: ", MLEuncert(dm))   # ± SE directly
+
+    # --- Asymptotic (Fisher) confidence intervals ---
+    println("MLEuncert: $(MLEuncert(dm))")
+
+    # --- Profile likelihood confidence intervals ---
+    println("\nProfile likelihood 95% CIs:")
+    profiles = ParameterProfiles(dm, 2.5, collect(1:np); plot=false, SaveTrajectories=true)
+    ci95 = Tuple(ConfidenceIntervals(profiles, InvConfVol(0.95)))
+    for i in 1:np
+        @printf("  θ[%d] = %.6f  CI95 = [%.6f, %.6f]\n", i, mle[i], ci95[i][1], ci95[i][2])
+    end
+
+    # --- Identifiability ---
+    svs, svecs = StructurallyIdentifiable(dm; threshold=1e-10)
+    println("\nSingular values: ", svs)
+    pract = PracticallyIdentifiable(profiles)
+    println("Practically identifiable up to σ = ", pract)
+end
+
+main()
 ```
 
-For vector outputs, specify the mapping and preserve component names; do not flatten data without documenting the ordering.
+⚠️ **Julia scoping**: The entire script is wrapped in a `function main() ... end` block to avoid Julia's top-level scoping issue where variables assigned in `for`/`try` blocks at global scope require `global` prefix. This is the #1 source of errors for agents writing Julia scripts. Always use this pattern.
 
-### Deterministic ODE/state-space model
+### Model comparison across candidates (e.g. polynomial degree selection)
 
-Use `ModelingToolkit` or an explicit `ODEFunction`, define the observation map deliberately, and construct a `DataModel` from the system, initial state, observable components or observation function, and parameter initial guess.
+```julia
+function compare_degrees(ds, degrees)
+    for deg in degrees
+        np = deg + 1
+        θ0 = zeros(np)
+        pred(xi, θ) = sum(θ[i] * xi^(deg - i + 1) for i in 1:np)
+        dm = DataModel(ds, pred, θ0)
+        @printf("deg=%d  AIC=%.2f  BIC=%.2f  AICc=%.2f  logL=%.2f\n",
+                deg, AIC(dm), BIC(dm), AICc(dm), LogLikeMLE(dm))
+    end
+end
+compare_degrees(ds, 0:9)
+# Select model with lowest BIC (most conservative) or AIC/AICc
+```
+
+### ODE model template
 
 ```julia
 using InformationGeometry, ModelingToolkit
 using ModelingToolkit: t_nounits as t, D_nounits as D
+
 @parameters k
 @variables x(t)
 @named sys = System([D(x) ~ -k*x], t, [x], [k])
-dm = DataModel(data, sys, [x0], [1], [k0]; tol=1e-10)
-```
+# Do NOT use @mtkcompile — it reorders states
 
-Avoid `@mtkcompile` if preserving declared state/equation ordering is important; InformationGeometry.jl documentation notes it may reorder them. Use a named system or an explicit `ODEFunction` and test the observation map.
+# GetModel creates an IG-compatible model from the ODE system
+ode_model = GetModel(sys, [x0], [1], [k0]; tol=1e-10)
+dm = DataModel(ds, ode_model, [k0])
+```
 
 ## Implementation checks before baseline commit
 
-1. `Pkg.instantiate()` succeeds in the new project environment.
-2. `julia --project=. --startup-file=no run.jl` loads data, builds a `DataModel`, and writes a machine-readable setup/calibration placeholder.
-3. The model predicts the correct output dimension and has a tested observation mapping.
-4. `README.md` contains the reproduction command, declared status, one-paragraph baseline-model description, and results map.
+1. `Pkg.instantiate()` succeeds.
+2. `julia --project=. --startup-file=no run.jl` loads data, builds a `DataModel`, prints MLE and diagnostics.
+3. The model predicts the correct output dimension (scalar for ydim=1).
+4. `README.md` contains the reproduction command and one-paragraph model description.
 5. `MODELING_LOG.md` begins with an input/baseline decision table row.
 
-Commit only after these checks, e.g. `model: implement baseline <mechanism>`.
+Commit after these checks pass.
 
 ## Handoff to next phase
 
 Pass the project root, `DataModel` construction location, declared error convention, parameter metadata, and the baseline Git commit to `ig-calibration-diagnosis`.
-
-## Do not
-
-- Guess whether a numeric column is a time, covariate, condition, or measured output when that distinction affects the model.
-- Substitute a fitted error model for the declared additive-error default.
-- Put all equations and analysis into a notebook or an untracked REPL session.
-- Conceal data transformations, reshaping, unit conversion, state ordering, or initial-condition assumptions.
