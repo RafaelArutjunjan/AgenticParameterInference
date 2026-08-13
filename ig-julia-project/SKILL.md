@@ -82,34 +82,20 @@ Initialize Git before any accepted model is implemented.
 Copy this template and adapt the `model` function, parameter count, and data loading. It covers the full pipeline: load data → fit → model comparison → identifiability → profile likelihood CIs.
 
 ```julia
-using InformationGeometry, LinearAlgebra, Statistics, Printf
+using InformationGeometry, LinearAlgebra, Statistics, CSV, DataFrames, Printf
 
-# --- Load CSV data (no CSV.jl dependency) ---
-function read_csv(path)
-    lines = readlines(path)
-    header = [strip(h) for h in split(lines[1], ',')]
-    cols = [Float64[] for _ in header]
-    for line in lines[2:end]
-        isempty(strip(line)) && continue
-        vals = split(line, ',')
-        for (i, v) in enumerate(vals)
-            push!(cols[i], parse(Float64, strip(v)))
-        end
-    end
-    Dict(zip(header, cols))
-end
 
 function main()
-    raw = read_csv(joinpath(@__DIR__, "data", "input.csv"))
-    x, y, σ = raw["x"], raw["y"], get(raw, "sigma", ones(length(y)))
+    ## Different column names must be adapted accordingly
+    df = CSV.read(joinpath(@__DIR__, "data", "input.csv"), DataFrame)
+    x, y, σ = df[!,"x"], df[!,"y"], df[!,"sigma"]
     ds = DataSet(x, y, σ; xnames=["x"], ynames=["y"])
 
     # --- Model definition ---
     # For ydim=1: return a SCALAR (Number), not a vector
     # θ is always a Vector{Float64}, even for 1 parameter
     model(xi, θ) = θ[1]*xi + θ[2]          # ← replace with your model
-    np = 2                                  # ← number of parameters
-    θ0 = zeros(np)                          # ← initial guess
+    θ0 = rand(2)                           # ← initial guess
 
     # --- Fit (DataModel auto-optimizes MLE on construction) ---
     dm = DataModel(ds, model, θ0)
@@ -117,7 +103,7 @@ function main()
     println("MLE: ", mle)
     println("logL: ", LogLikeMLE(dm))
     println("AIC: ", AIC(dm), "  BIC: ", BIC(dm), "  AICc: ", AICc(dm))
-    println("MLEuncert: ", MLEuncert(dm))   # ± SE directly
+    println("MLEuncert: ", MLEuncert(dm))   # MLE ± SE directly
 
     # --- Asymptotic (Fisher) confidence intervals ---
     println("MLEuncert: $(MLEuncert(dm))")
@@ -162,8 +148,8 @@ compare_degrees(ds, 0:9)
 ### ODE model template
 
 ```julia
-using InformationGeometry, ModelingToolkit
-using ModelingToolkit: t_nounits as t, D_nounits as D
+using InformationGeometry, ModelingToolkitBase
+using ModelingToolkitBase: t_nounits as t, D_nounits as D
 
 @parameters k
 @variables x(t)
