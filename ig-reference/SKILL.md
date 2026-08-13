@@ -49,7 +49,6 @@ DS = DataSet(Xdf, Ydf, sigma)
 **Accessors**: `xdata(DS)`, `ydata(DS)`, `ysigma(DS)`, `yInvCov(DS)`, `xdim(DS)`, `ydim(DS)`, `Npoints(DS)`, `dims(DS)`, `Xnames(DS)`, `Ynames(DS)`
 
 
-
 ### Advanced DataSet types
 
 | Type | Non-Gaussian y | Missing values | x-uncertainty | Mixed x-y unc. | y-unc. estimation | x-unc. estimation |
@@ -318,7 +317,6 @@ DOF(DM)               # degrees of freedom = pdim(DM)
 ChisqCDF(DOF, x)      # χ² CDF
 InvChisqCDF(DOF, p)   # inverse χ² CDF
 ConfidenceBoundary(DM, Conf)    # single boundary
-ConfidenceRegionVolume(DM, sol) # volume of confidence region
 ```
 
 ## Profile Likelihoods
@@ -429,28 +427,10 @@ ExponentialMap(DM, θ, v)    # exp_θ(v): tangent vector → point on manifold
 LogarithmicMap(DM, θ1, θ2)  # log_θ1(θ2): point → tangent vector
 ```
 
-## Kullback-Leibler Divergence
-
-```julia
-# Between Distributions.jl distributions
-KullbackLeibler(Cauchy(1.,2.), Normal(-4.,0.5), HyperCube([-100,100]); tol=1e-12)
-
-# Multivariate (adaptive h-cubature)
-KullbackLeibler(MvNormal([0,2.5],diagm([1,4.])), MvTDist(1,[3,2],diagm([2.,3.])),
-    HyperCube([[-20,50],[-20,50]]); tol=1e-8)
-
-# Monte Carlo integration
-KullbackLeibler(p, q, HC; Carlo=true, N=Int(5e6))
-
-# Generic functions (user ensures positivity & normalization)
-KullbackLeibler(f_p, f_q, HC)
-```
-
-Analytical KL for: Normal, MvNormal, Cauchy, Exponential, Weibull, Gamma. ODE-based for 1D unknown. Monte Carlo for multivariate unknown.
 
 ## Model Transformations
 
-### Componentwise transforms
+### Componentwise parameter transforms
 
 ```julia
 LogTransform(DM)           # θ → log(θ)
@@ -606,7 +586,6 @@ SymbolicModel(DM; sub=false)  # with generic θ[1],θ[2],... names
 SymbolicdModel(DM)        # symbolic Jacobian expression
 OptimizedDM(DM)           # symbolically optimized model + Jacobian (via Symbolics.jl)
 InplaceDM(DM)             # in-place version for performance
-SpeedifyTransform(F)      # optimize any function via Symbolics
 ```
 
 ## Parallelization
@@ -688,19 +667,6 @@ DM = Refit(CG; meth=IPNewton())            # re-fit with InformationGeometry opt
 | `Domain` | Parameter domain |
 | `ProfileDomain` | Domain for profile specifically |
 
-### ComputeGeodesic
-
-| Keyword | Description |
-|---------|-------------|
-| `approx` | Use constant Christoffel symbols |
-| `tol` | ODE solver tolerance |
-| `meth` | ODE solver algorithm |
-| `Boundaries` | Termination function `f(u,t,int) -> bool` |
-| `Endtime` | Max integration time |
-
-## Quick API Cheat Sheet (copy-paste ready)
-
-All verified against IG.jl v1.31.0. These are the exact call patterns and return types — no guessing needed.
 
 ### Construction → MLE → log-likelihood → AIC/BIC
 
