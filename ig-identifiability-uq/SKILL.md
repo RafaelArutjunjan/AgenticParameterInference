@@ -9,7 +9,7 @@ platforms: [linux]
 metadata:
   hermes:
     tags: [informationgeometry, identifiability, profile-likelihood, confidence-intervals, model-reduction]
-    related_skills: [mechanistic-model-development, ig-julia-project, ig-calibration-diagnosis]
+    related_skills: [mechanistic-model-development, ig-julia-project, ig-calibration-diagnosis, ig-reference, ig-advanced-datasets]
 ---
 
 # InformationGeometry.jl Identifiability and UQ

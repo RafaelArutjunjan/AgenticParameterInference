@@ -3,7 +3,7 @@ name: ig-reference
 description: Complete reference for InformationGeometry.jl. Covers DataSet/DataModel/ModelMap construction, MLE, confidence regions, profile likelihoods, KL divergence, geodesics, curvature, model transformations, ODE models, ConditionGrid, optimization, plotting, and parallelization.
 version: 1.0
 tags: [julia, information-geometry, parameter-inference, confidence-regions, profile-likelihood, fisher-metric, geodesics, mle, optimization]
-related_skills: [pgfplotsx-jl, latex-pgfplots]
+related_skills: [pgfplotsx-jl, latex-pgfplots, ig-advanced-datasets]
 ---
 
 # InformationGeometry.jl Reference
@@ -61,7 +61,60 @@ DS = DataSet(Xdf, Ydf, sigma)
 | `DataSetUncertain` | ❌ | ✅ | ❌ | ❌ | ✅ | ❌ |
 | `UnknownVarianceDataSet` | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
 
-If the given data cannot be expressed with the `DataSet` type, e.g. due to missing values, non-zero x-uncertainty or unknown y-uncertainty which needs to be estimated via an error model, look up the corresponding doc string and / or constructor methods to find the required syntax for defining them.
+If the given data cannot be expressed with the `DataSet` type, e.g. due to missing values, non-zero x-uncertainty or unknown y-uncertainty which needs to be estimated via an error model, **load the `ig-advanced-datasets` skill** for complete constructor references, worked examples, accessor tables, and per-type pitfalls for each of these types. The sections below give a brief summary; the dedicated skill has full coverage.
+
+#### DataSetExact
+
+Stores data as probability distributions over x-space and y-space, allowing x-uncertainties and non-Gaussian y-uncertainties (Cauchy, Student-t, etc.). When x-uncertainty is zero (using `InformationGeometry.Dirac`), it is numerically equivalent to `DataSet`.
+
+```julia
+# y-errors only (equivalent to DataSet)
+DataSetExact(x, y, σ_y)
+
+# with x-errors
+DataSetExact(x, σ_x, y, σ_y)
+
+# from distributions (non-Gaussian)
+DataSetExact(xd::Distribution, yd::Distribution, dims=(N, xdim, ydim))
+```
+
+#### CompositeDataSet
+
+Handles multiple observables measured at different x-values with possible missing data. Splits data into a vector of `DataSet`/`DataSetExact` components, one per observable.
+
+```julia
+# from DataFrame with missing values (striped: x, y₁, σ₁, y₂, σ₂, ...)
+CompositeDataSet(df, xdim, ydim; stripedYs=true)
+
+# from individual DataSets
+CompositeDataSet([ds1, ds2])
+```
+
+#### GeneralizedDataSet
+
+Most general fixed-uncertainty type: joint x-y distribution with possible x-y correlations. Stores a single multivariate distribution over the combined (x,y) space. If the distribution is separable (x,y independent), auto-converts to `DataSetExact`.
+
+```julia
+# joint MvNormal with x-y cross-covariance
+GeneralizedDataSet(MvNormal(μ, Σ), (N, xdim, ydim))
+```
+
+#### DataSetUncertain
+
+For data where y-variance is unknown and estimated via a parametric error model `σ(x, y_pred, c)`. Error parameters `c` are jointly fit with model parameters. Supports missing y-values.
+
+```julia
+# reciprocal error model σ⁻¹(x, y_pred, c), initial error params c
+DataSetUncertain(x, y, (x,y,c)->1/exp10(c[1]), [0.5])
+```
+
+#### UnknownVarianceDataSet
+
+Extends `DataSetUncertain` to also estimate x-variance. Both x- and y-uncertainties estimated via separate error models. The x-values themselves become latent parameters.
+
+```julia
+UnknownVarianceDataSet(x, y, σ_x⁻¹, σ_y⁻¹, cx_init, cy_init)
+```
 
 
 ### DataModel

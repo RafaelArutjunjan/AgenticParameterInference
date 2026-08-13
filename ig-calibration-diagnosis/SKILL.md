@@ -9,7 +9,7 @@ platforms: [linux]
 metadata:
   hermes:
     tags: [informationgeometry, calibration, multistart, residuals, model-selection, diagnostics]
-    related_skills: [mechanistic-model-development, ig-julia-project, ig-identifiability-uq]
+    related_skills: [mechanistic-model-development, ig-julia-project, ig-identifiability-uq, ig-reference, ig-advanced-datasets]
 ---
 
 # InformationGeometry.jl Calibration and Fit Diagnosis

@@ -9,7 +9,7 @@ platforms: [linux]
 metadata:
   hermes:
     tags: [julia, informationgeometry, project-setup, csv, ode, algebraic-models]
-    related_skills: [mechanistic-model-development, ig-calibration-diagnosis]
+    related_skills: [mechanistic-model-development, ig-calibration-diagnosis, ig-reference, ig-advanced-datasets]
 ---
 
 # InformationGeometry.jl Project Construction
@@ -53,7 +53,8 @@ Inspect the actual CSV before implementation. Write `INPUT_INTERPRETATION.md` th
 - parameter names, meanings, units, initial guesses, bounds/transforms if known;
 - error model.
 
-If measurement uncertainty is missing, use the additive absolute-error / OLS default. A likelihood/profile calculation still needs an absolute residual scale: use a supplied scale when available; otherwise estimate the OLS residual scale after a provisional fit (`sqrt(SSE / max(n - p, 1))`) and record it as a fixed plug-in scale. For `DataSet`, pass this as the `σ` vector.
+If measurement uncertainty is missing, use the additive absolute-error / OLS default.
+For `DataSet`, need to pass known `σ` array. If the data requires non-Gaussian uncertainties, x-errors, missing values, or estimated variances, use an advanced dataset type — load the `ig-advanced-datasets` skill for constructors and examples.
 
 If a material ambiguity remains, create `INPUT_CLARIFICATIONS.md`, commit it, write `STATUS.md` as `BLOCKED_INPUT`, and stop before calibration.
 

@@ -9,7 +9,7 @@ platforms: [linux]
 metadata:
   hermes:
     tags: [mechanistic-models, julia, informationgeometry, orchestration, calibration, identifiability, uncertainty-quantification]
-    related_skills: [ig-julia-project, ig-calibration-diagnosis, ig-identifiability-uq]
+    related_skills: [ig-julia-project, ig-calibration-diagnosis, ig-identifiability-uq, ig-reference, ig-advanced-datasets]
 ---
 
 # Mechanistic Model Development — Coordinator
@@ -20,7 +20,7 @@ Turn a CSV dataset, a prose experiment description, and a candidate model outlin
 2. `ig-calibration-diagnosis` — calibrate candidates, use residual diagnostics to guide structural changes.
 3. `ig-identifiability-uq` — reduce nonidentifiable structure, compute profile-likelihood UQ.
 
-If necessary, the `ig-reference` skill can also be loaded for a more complete API reference and copy-paste cheat sheet.
+If necessary, the `ig-reference` skill can also be loaded for a more complete API reference and copy-paste cheat sheet. If your data requires non-Gaussian uncertainties, x-errors, missing values, or estimated variances, load the `ig-advanced-datasets` skill for the advanced `DataSet` types (`DataSetExact`, `CompositeDataSet`, `GeneralizedDataSet`, `DataSetUncertain`, `UnknownVarianceDataSet`).
 
 ## Core principles
 

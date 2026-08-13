@@ -19,6 +19,7 @@ While an LLM might not (yet) be able to develop an ideal mechanistic model on it
 |-------|-------------|
 | `mechanistic-model-development` | Coordinator that orchestrates the full workflow: project setup → calibration → identifiability/UQ. |
 | `ig-julia-project` | Sets up initial Julia project with required packages and interprets input data. |
+| `ig-advanced-datasets` | Reference for advanced dataset types with constructors, worked examples and pitfalls. |
 | `ig-calibration-diagnosis` | Fits candidate models, compares them via AIC/BIC/AICc, and evaluates residual diagnostics. |
 | `ig-identifiability-uq` | Checks parameter identifiability and computes profile-likelihood confidence intervals. Guides model reduction if parameters are non-identifiable. |
 | `ig-reference` | Provides a reference for all important user-exposed methods of InformationGeometry.jl with examples. |
