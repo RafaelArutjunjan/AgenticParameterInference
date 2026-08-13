@@ -792,11 +792,6 @@ logl = LogLikeMLE(dm)
 aic, bic, aicc = AIC(dm), BIC(dm), AICc(dm)
 uncert = MLEuncert(dm)                 # [2.01 ± 0.11, -0.05 ± 0.35]
 
-# Fisher CIs
-fm = FisherMetric(dm)(mle)
-se = sqrt.(diag(inv(fm)))
-ci = (mle .- 1.96.*se, mle .+ 1.96.*se)
-
 # Profile likelihood CIs
 profiles = ParameterProfiles(dm, 2, [1, 2]; plot=false, IsCost=true)
 ci95 = Tuple(ConfidenceIntervals(profiles, InvConfVol(0.95)))
@@ -819,4 +814,3 @@ ci95 = Tuple(ConfidenceIntervals(profiles, InvConfVol(0.95)))
 13. **DataSet ydim convention**: dims tuple is `(Npoints, xdim, ydim)`. Multi-component data can be passed as flat concatenated vectors with this tuple.
 14. **ConfidenceIntervals method**: Use `Tuple(ConfidenceIntervals(...))` to get `[(lo, hi), ...]` pairs. May contain `-Inf`/`+Inf` — preserve these.
 15. **Always `using LinearAlgebra`**: Needed for `inv`, `diag`, `eigvals`, etc. when computing CIs manually.
-16. **Julia string interpolation indexing**: `"$uncert[i]"` parses as `"$(uncert)[i]"` — prints the whole vector then literal `[i]`. Use `"$(uncert[i])"` or comma syntax: `println("θ[$i] = ", uncert[i])`. This affects `MLEuncert(dm)` output (returns `Vector{Measurement{Float64}}`).
