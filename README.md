@@ -21,6 +21,7 @@ While an LLM might not (yet) be able to develop an ideal mechanistic model on it
 | `ig-julia-project` | Sets up initial Julia project with required packages and interprets input data. |
 | `ig-calibration-diagnosis` | Fits candidate models, compares them via AIC/BIC/AICc, and evaluates residual diagnostics. |
 | `ig-identifiability-uq` | Checks parameter identifiability and computes profile-likelihood confidence intervals. Guides model reduction if parameters are non-identifiable. |
+| `ig-reference` | Provides a reference for all important user-exposed methods of InformationGeometry.jl with examples. |
 
 
 In its current form, the skills are formatted to be executed by [Hermes Agent](https://github.com/NousResearch/hermes-agent).
