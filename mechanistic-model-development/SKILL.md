@@ -20,7 +20,7 @@ Turn a CSV dataset, a prose experiment description, and a candidate model outlin
 2. `ig-calibration-diagnosis` — calibrate candidates, use residual diagnostics to guide structural changes.
 3. `ig-identifiability-uq` — reduce nonidentifiable structure, compute profile-likelihood UQ.
 
-Also load `informationgeometry-jl` for the complete API reference and copy-paste cheat sheet.
+If necessary, the `ig-reference` skill can also be loaded for a more complete API reference and copy-paste cheat sheet.
 
 ## Core principles
 

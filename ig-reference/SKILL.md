@@ -1,5 +1,5 @@
 ---
-name: informationgeometry-jl
+name: ig-reference
 description: Complete reference for InformationGeometry.jl. Covers DataSet/DataModel/ModelMap construction, MLE, confidence regions, profile likelihoods, KL divergence, geodesics, curvature, model transformations, ODE models, ConditionGrid, optimization, plotting, and parallelization.
 version: 1.0
 tags: [julia, information-geometry, parameter-inference, confidence-regions, profile-likelihood, fisher-metric, geodesics, mle, optimization]
